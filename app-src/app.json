@@ -1,0 +1,19 @@
+{
+  "expo": {
+    "name": "Ebenoba GH",
+    "slug": "ebenoba",
+    "scheme": "ebenoba",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "splash": { "image": "./assets/splash.png", "resizeMode": "contain", "backgroundColor": "#FFFFFF" },
+    "android": {
+      "package": "com.ebenoba.app",
+      "adaptiveIcon": { "foregroundImage": "./assets/adaptive-icon.png", "backgroundColor": "#FFFFFF" }
+    },
+    "ios": { "bundleIdentifier": "com.ebenoba.app", "supportsTablet": false },
+    "plugins": ["expo-router", ["expo-notifications", { "color": "#D50100" }], ["expo-image-picker", { "photosPermission": "Ebenoba GH needs your photos so you can add pictures of your shop and products." }]],
+    "experiments": { "typedRoutes": false }
+  }
+}
