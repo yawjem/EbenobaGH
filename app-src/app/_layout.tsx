@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Modal, Text, View } from 'react-native';
 import { Stack, router } from 'expo-router';
-import * as Notifications from 'expo-notifications';
 import { StatusBar } from 'expo-status-bar';
 import { AuthProvider } from '../src/state/auth';
 import { CartProvider } from '../src/state/cart';
 import { loadTrackingState, setConsent } from '../src/lib/tracking';
 import { Button } from '../src/components/ui';
 import { colors } from '../src/lib/theme';
+import { getNotifications } from '../src/lib/notifications';
 
 export default function RootLayout() {
   const [askConsent, setAskConsent] = useState(false);
@@ -18,6 +18,8 @@ export default function RootLayout() {
 
   // Tapping a notification opens the order or product it is about.
   useEffect(() => {
+    const Notifications = getNotifications();
+    if (!Notifications) return; // Expo Go has no push
     const sub = Notifications.addNotificationResponseReceivedListener((r) => {
       const d: any = r.notification.request.content.data ?? {};
       if (d.kind === 'seller_new_order') router.push('/seller/orders');

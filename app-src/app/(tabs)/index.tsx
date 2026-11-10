@@ -1,7 +1,8 @@
 import React, { useCallback, useState } from 'react';
-import { FlatList, Image, Pressable, RefreshControl, SafeAreaView, ScrollView, Text, TextInput, View } from 'react-native';
+import { FlatList, Image, Pressable, RefreshControl, ScrollView, Text, TextInput, View } from 'react-native';
 import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { supabase } from '../../src/lib/supabase';
 import { colors, radius, tileTints } from '../../src/lib/theme';
