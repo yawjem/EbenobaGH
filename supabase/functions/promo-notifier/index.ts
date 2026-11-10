@@ -4,6 +4,7 @@
 import { corsHeaders, json } from '../_shared/cors.ts';
 import { adminClient, isCron } from '../_shared/supabase.ts';
 import { sendPush } from '../_shared/senders.ts';
+import { promoMessage } from '../_shared/templates.ts';
 
 const ghs = (n: number) => 'GH₵' + Number(n).toLocaleString('en-GH', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
@@ -21,14 +22,19 @@ Deno.serve(async (req) => {
     const { data: allowed } = await admin.rpc('can_send_promo', { p_user: t.user_id, p_product: t.product_id });
     if (!allowed) { skipped++; continue; }
 
-    const [{ data: p }, { data: prof }] = await Promise.all([
+    const [{ data: p }, { data: prof }, { data: interest }] = await Promise.all([
       admin.from('product_feed').select('id,title,price,display_price,campaign_id').eq('id', t.product_id).maybeSingle(),
-      admin.from('profiles').select('push_token').eq('id', t.user_id).maybeSingle(),
+      admin.from('profiles').select('push_token,full_name').eq('id', t.user_id).maybeSingle(),
+      admin.from('user_product_interest').select('view_count,total_seconds').eq('user_id', t.user_id).eq('product_id', t.product_id).maybeSingle(),
     ]);
     if (!p || !prof?.push_token) { skipped++; continue; }
 
-    const r = await sendPush(prof.push_token, `${t.discount_pct}% off: ${p.title}`,
-      `Now ${ghs(p.display_price)} (was ${ghs(p.price)}). Tap to see it.`, { product_id: p.id, kind: 'price_drop' });
+    const msg = promoMessage({
+      firstName: prof.full_name ? String(prof.full_name).trim().split(/\s+/)[0] : null,
+      title: p.title, discountPct: Number(t.discount_pct), price: ghs(p.display_price), was: ghs(p.price),
+      views: interest?.view_count ?? 0, seconds: interest?.total_seconds ?? 0,
+    });
+    const r = await sendPush(prof.push_token, msg.title, msg.body, { product_id: p.id, kind: 'price_drop' });
     if (r.ok) {
       await admin.from('promo_notification_log').insert({ user_id: t.user_id, product_id: t.product_id, campaign_id: p.campaign_id });
       sent++;

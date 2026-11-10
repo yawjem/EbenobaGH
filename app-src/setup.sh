@@ -12,7 +12,7 @@ cp ../app.json ../.env.example ./
 cp .env.example .env
 npm install
 npx expo install expo-router react-native-safe-area-context react-native-screens expo-linking expo-constants \
-  expo-status-bar expo-web-browser expo-notifications expo-device expo-linear-gradient expo-image-picker \
+  expo-status-bar expo-linking expo-web-browser expo-notifications expo-device expo-linear-gradient expo-image-picker \
   @react-native-async-storage/async-storage react-native-url-polyfill \
   @expo/vector-icons @supabase/supabase-js
 # expo-router entry point

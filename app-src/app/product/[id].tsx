@@ -12,6 +12,7 @@ import { useAuth } from '../../src/state/auth';
 import { track } from '../../src/lib/tracking';
 
 const W = Dimensions.get('window').width;
+const SLOT_LABEL: Record<string, string> = { in_use: 'Out of the box / in use', box: 'In the box' };
 
 export default function ProductPage() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -23,6 +24,7 @@ export default function ProductPage() {
   const [sel, setSel] = useState<string | null>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [wished, setWished] = useState(false);
+  const [page, setPage] = useState(0);
   const openedAt = useRef(Date.now());
 
   useEffect(() => {
@@ -54,6 +56,7 @@ export default function ProductPage() {
 
   if (!p) return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
 
+  const gallery = media.length ? media : [{ id: 'x', url: p.image_url, slot: 'view' }];
   const variant = variants.find((v) => v.id === sel);
   const unit = variant?.price_override ?? p.display_price;
   const off = p.price > 0 ? Math.round((1 - p.display_price / p.price) * 100) : 0;
@@ -77,8 +80,17 @@ export default function ProductPage() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView>
-        <FlatList horizontal pagingEnabled showsHorizontalScrollIndicator={false} data={media.length ? media : [{ id: 'x', url: p.image_url }]}
-          keyExtractor={(m) => m.id} renderItem={({ item }) => <Image source={{ uri: item.url }} style={{ width: W, height: W, backgroundColor: colors.surface }} resizeMode="contain" />} />
+        <View>
+          <FlatList horizontal pagingEnabled showsHorizontalScrollIndicator={false} data={gallery}
+            keyExtractor={(m) => m.id} onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}
+            renderItem={({ item }) => <Image source={{ uri: item.url }} style={{ width: W, height: W, backgroundColor: colors.surface }} resizeMode="contain" />} />
+          {!!SLOT_LABEL[gallery[page]?.slot] && (
+            <View style={{ position: 'absolute', left: 12, bottom: 12, backgroundColor: 'rgba(31,26,27,0.75)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill }}>
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{SLOT_LABEL[gallery[page].slot]}</Text></View>)}
+          {gallery.length > 1 && (
+            <View style={{ position: 'absolute', right: 12, bottom: 12, backgroundColor: 'rgba(31,26,27,0.75)', paddingHorizontal: 10, paddingVertical: 4, borderRadius: radius.pill }}>
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '700' }}>{page + 1}/{gallery.length}</Text></View>)}
+        </View>
 
         <View style={{ padding: 16 }}>
           <View style={{ flexDirection: 'row', alignItems: 'flex-start' }}>

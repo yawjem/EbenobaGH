@@ -6,6 +6,7 @@ import { supabase } from '../src/lib/supabase';
 import { toE164Gh } from '../src/lib/phone';
 import { colors, radius } from '../src/lib/theme';
 import { Button } from '../src/components/ui';
+import { signInWithGoogle } from '../src/lib/oauth';
 
 // Two ways in: a code texted to your phone (no password to remember), or email + password.
 // Nobody has to sign in to look around: "Continue browsing" closes this screen and the whole shop stays open.
@@ -15,12 +16,21 @@ const RESEND_SECONDS = 60;
 const friendly = (m: string) =>
   /rate limit|too many|security purposes/i.test(m) ? 'Too many tries. Please wait a minute and try again.'
   : /expired|invalid/i.test(m) ? 'That code is wrong or has expired. Check it, or ask for a new one.'
+  : /already registered|already been registered/i.test(m) ? 'That email already has an account. Sign in instead.'
   : /Ghana/i.test(m) ? 'Please use a Ghana mobile number.'
   : m;
 
 export default function Login() {
   const [way, setWay] = useState<'phone' | 'email'>('phone');
   const close = () => (router.canGoBack() ? router.back() : router.replace('/'));
+
+  const [gBusy, setGBusy] = useState(false);
+  const google = async () => {
+    setGBusy(true);
+    const r = await signInWithGoogle();
+    setGBusy(false);
+    if (r.ok) close(); else if (!r.cancelled) Alert.alert('Google sign-in failed', r.error ?? 'Please try again.');
+  };
 
   const inp = { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 14, marginTop: 10, backgroundColor: '#fff', fontSize: 16 } as const;
 
@@ -30,6 +40,15 @@ export default function Login() {
         <Image source={require('../assets/splash.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} resizeMode="contain" />
         <Text style={{ fontSize: 22, fontWeight: '800', color: colors.navy, textAlign: 'center' }}>Welcome to Ebenoba GH</Text>
         <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 4, marginBottom: 18 }}>Sign in to order and track your deliveries.</Text>
+
+        <Pressable onPress={google} disabled={gBusy} accessibilityRole="button" accessibilityLabel="Continue with Google"
+          style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 10, paddingVertical: 13, borderRadius: radius.pill, borderWidth: 1.5, borderColor: colors.border, backgroundColor: '#fff', opacity: gBusy ? 0.6 : 1 }}>
+          <Ionicons name="logo-google" size={18} color="#4285F4" />
+          <Text style={{ fontWeight: '700', color: colors.text, fontSize: 15 }}>{gBusy ? 'Opening Google…' : 'Continue with Google'}</Text>
+        </Pressable>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10, marginVertical: 16 }}>
+          <View style={{ flex: 1, height: 1, backgroundColor: colors.border }} /><Text style={{ color: colors.muted, fontSize: 12 }}>or</Text><View style={{ flex: 1, height: 1, backgroundColor: colors.border }} />
+        </View>
 
         <View style={{ flexDirection: 'row', backgroundColor: colors.surface, borderRadius: radius.pill, padding: 4, borderWidth: 1, borderColor: colors.border }}>
           {([['phone', 'Phone number', 'call-outline'], ['email', 'Email', 'mail-outline']] as const).map(([k, label, icon]) => (
@@ -105,21 +124,69 @@ function PhoneLogin({ inp, onDone }: { inp: any; onDone: () => void }) {
 
 function EmailLogin({ inp, onDone }: { inp: any; onDone: () => void }) {
   const [mode, setMode] = useState<'in' | 'up'>('in');
+  const [step, setStep] = useState<'form' | 'code'>('form');
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [wait, setWait] = useState(0);
+
+  useEffect(() => { if (wait <= 0) return; const t = setTimeout(() => setWait(wait - 1), 1000); return () => clearTimeout(t); }, [wait]);
+
+  const toCodeStep = () => { setCode(''); setStep('code'); setWait(RESEND_SECONDS); };
 
   const submit = async () => {
+    if (!/^\S+@\S+\.\S+$/.test(email.trim())) return Alert.alert('Check your email address');
+    if (mode === 'up' && password.length < 6) return Alert.alert('Choose a longer password', 'At least 6 characters.');
     setBusy(true);
     const res = mode === 'in'
       ? await supabase.auth.signInWithPassword({ email: email.trim(), password })
       : await supabase.auth.signUp({ email: email.trim(), password, options: { data: { full_name: name } } });
     setBusy(false);
-    if (res.error) return Alert.alert(mode === 'in' ? 'Could not sign in' : 'Could not sign up', friendly(res.error.message));
-    if (mode === 'up' && !res.data.session) return Alert.alert('Check your email', 'We sent a confirmation link. Confirm it, then sign in.');
+    if (res.error) {
+      // Signed up before but never typed the code: send a fresh one
+      if (/not confirmed/i.test(res.error.message)) {
+        await supabase.auth.resend({ type: 'signup', email: email.trim() });
+        Alert.alert('Confirm your email', 'We sent a new 6-digit code to your email.');
+        return toCodeStep();
+      }
+      return Alert.alert(mode === 'in' ? 'Could not sign in' : 'Could not sign up', friendly(res.error.message));
+    }
+    // Email confirmation is on: no session yet, the 6-digit code in the email finishes sign-up
+    if (mode === 'up' && !res.data.session) return toCodeStep();
     onDone();
   };
+
+  const verify = async () => {
+    if (!/^\d{6}$/.test(code)) return Alert.alert('Enter the 6-digit code from your email');
+    setBusy(true);
+    const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code, type: 'signup' });
+    setBusy(false);
+    if (error) return Alert.alert('Could not verify', friendly(error.message));
+    onDone();
+  };
+
+  const resend = async () => {
+    setBusy(true);
+    const { error } = await supabase.auth.resend({ type: 'signup', email: email.trim() });
+    setBusy(false);
+    if (error) return Alert.alert('Could not send a new code', friendly(error.message));
+    setWait(RESEND_SECONDS);
+  };
+
+  if (step === 'code') return (
+    <View>
+      <Text style={{ marginTop: 16, color: colors.text }}>We emailed a 6-digit code to <Text style={{ fontWeight: '800' }}>{email.trim()}</Text>. Enter it to finish creating your account.</Text>
+      <TextInput placeholder="••••••" keyboardType="number-pad" maxLength={6} value={code} onChangeText={(v) => setCode(v.replace(/\D/g, ''))}
+        textContentType="oneTimeCode" style={{ ...inp, fontSize: 26, letterSpacing: 12, textAlign: 'center', fontWeight: '800' }} />
+      <Text style={{ color: colors.muted, fontSize: 12, marginTop: 6 }}>Not there? Check your spam folder. The code works for one hour.</Text>
+      <Button title="Verify email" loading={busy} onPress={verify} style={{ marginTop: 16 }} />
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', marginTop: 14 }}>
+        <Pressable onPress={() => setStep('form')}><Text style={{ color: colors.primary, fontWeight: '600' }}>Change email</Text></Pressable>
+        <Pressable disabled={wait > 0 || busy} onPress={resend}><Text style={{ color: wait > 0 ? colors.muted : colors.primary, fontWeight: '600' }}>{wait > 0 ? `Send again in ${wait}s` : 'Send a new code'}</Text></Pressable>
+      </View>
+    </View>);
 
   return (
     <View>

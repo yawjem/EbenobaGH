@@ -7,6 +7,7 @@ import { useAuth } from '../../src/state/auth';
 import { colors, radius } from '../../src/lib/theme';
 import { ghs } from '../../src/lib/format';
 import { Button, Empty } from '../../src/components/ui';
+import { SwipeToDelete } from '../../src/components/SwipeToDelete';
 
 export default function Cart() {
   const { items, subtotal, setQty, remove } = useCart();
@@ -18,7 +19,8 @@ export default function Cart() {
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <FlatList data={items} keyExtractor={(i) => i.variantId} contentContainerStyle={{ padding: 12 }}
         renderItem={({ item }) => (
-          <View style={{ flexDirection: 'row', gap: 12, padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginBottom: 10 }}>
+          <SwipeToDelete onDelete={() => remove(item.variantId)}>
+          <View style={{ flexDirection: 'row', gap: 12, padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.bg }}>
             <Image source={{ uri: item.image ?? undefined }} style={{ width: 80, height: 80, borderRadius: radius.sm, backgroundColor: colors.surface }} />
             <View style={{ flex: 1 }}>
               <Text numberOfLines={2} style={{ fontWeight: '600' }}>{item.title}</Text>
@@ -32,14 +34,16 @@ export default function Cart() {
               </View>
             </View>
           </View>
+          </SwipeToDelete>
         )} />
+      <Text style={{ textAlign: 'center', color: colors.muted, fontSize: 12, paddingBottom: 6 }}>Swipe an item left to remove it</Text>
       <View style={{ padding: 16, borderTopWidth: 1, borderColor: colors.border, backgroundColor: '#fff' }}>
         <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
           <Text style={{ color: colors.muted }}>Subtotal</Text><Text style={{ fontWeight: '800', fontSize: 18 }}>{ghs(subtotal)}</Text>
         </View>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginVertical: 8, padding: 8, backgroundColor: colors.tealSoft, borderRadius: radius.sm }}>
           <Ionicons name="bicycle-outline" size={16} color={colors.teal} />
-          <Text style={{ color: colors.tealText, fontSize: 12, fontWeight: '600', flex: 1 }}>Delivery is calculated per package at checkout.</Text>
+          <Text style={{ color: colors.tealText, fontSize: 12, fontWeight: '600', flex: 1 }}>Choose your delivery method and time at checkout.</Text>
         </View>
         <Button title={session ? 'Checkout' : 'Sign in to checkout'} onPress={() => router.push(session ? '/checkout' : '/login')} />
       </View>

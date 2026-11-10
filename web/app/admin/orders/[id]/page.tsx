@@ -5,6 +5,8 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import { Badge, PACKAGE_STATUSES, PageHeader, STATUS_LABEL, dt, money } from '@/lib/ui';
 
+const METHOD_NAME: Record<string, string> = { ebenoba_rider: 'Ebenoba Rider', shaq_express: 'Shaq Express', seamless: 'Seamless Courier Service', fedex: 'FedEx International' };
+const SPEED_NAME: Record<string, string> = { same_day: 'Same day', three_days: '3 days', one_week: '1 week', two_weeks: '2 weeks' };
 type Draft = { status: string; rider_id: string; delivery_method: string; courier_name: string; tracking_number: string; eta_from: string; eta_to: string };
 
 export default function OrderDetail() {
@@ -82,6 +84,7 @@ export default function OrderDetail() {
           {ship(order).digital_address && <div className="muted">GPS: {ship(order).digital_address}</div>}</div>
         <div className="card"><h2>Payment</h2><div className="row"><Badge s={order.status} /><b>{money(order.total)}</b></div>
           <div className="muted small">Items {money(order.subtotal)} · Delivery {money(order.delivery_total)}</div>
+          {order.delivery_method_code && <div className="small" style={{ marginTop: 4 }}>Customer chose: <b>{METHOD_NAME[order.delivery_method_code] ?? order.delivery_method_code}</b> · <b>{SPEED_NAME[order.delivery_speed_code] ?? order.delivery_speed_code}</b>{ship(order).country_code && ship(order).country_code !== 'GH' ? <> · to <b>{ship(order).country_code}</b></> : null}</div>}
           {pays.map((p: any) => <div key={p.id} className="small muted" style={{ marginTop: 4 }}>{p.channel ?? 'payment'} · {p.reference} · <Badge s={p.status} /></div>)}</div>
       </div>
 

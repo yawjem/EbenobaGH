@@ -39,6 +39,24 @@ export function messageFor(kind: string, p: P): Message | null {
   }
 }
 
+// Price-drop push, personalised from what the customer actually did (only people who allowed tracking get here).
+export type PromoCtx = {
+  firstName?: string | null; title: string; discountPct: number; price: string; was: string;
+  views?: number; seconds?: number;
+};
+export function promoMessage(c: PromoCtx): { title: string; body: string } {
+  const hi = c.firstName ? `${c.firstName}, ` : '';
+  const short = c.title.length > 40 ? c.title.slice(0, 39) + '…' : c.title;
+  const views = c.views ?? 0, secs = c.seconds ?? 0;
+  if (views >= 3)
+    return { title: `${hi}${short} is ${c.discountPct}% off`,
+             body: `You have looked at it ${views} times. Now ${c.price} (was ${c.was}). Grab it before it is gone.` };
+  if (secs >= 90)
+    return { title: `${hi}still thinking about it?`,
+             body: `${short} just dropped ${c.discountPct}%: now ${c.price} (was ${c.was}).` };
+  return { title: `${hi}${c.discountPct}% off ${short}`, body: `Now ${c.price} (was ${c.was}). Tap to see it.` };
+}
+
 // Login code SMS (one message, under 160 characters)
 export const otpMessage = (code: string) => `Ebenoba GH: your login code is ${code}. Never share it with anyone.`;
 

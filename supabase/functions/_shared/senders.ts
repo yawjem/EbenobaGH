@@ -18,33 +18,47 @@ export const sendPush = (token: string, title: string, body: string, data: Recor
     return { ok, detail: ok ? undefined : JSON.stringify(j).slice(0, 300) };
   });
 
-// Arkesel v2 SMS: POST https://sms.arkesel.com/api/v2/sms/send, header api-key, {sender, message, recipients[]}
-// Sender ID: max 11 characters and must be registered/approved with Arkesel before it shows on handsets.
+// mNotify quick SMS: POST https://api.mnotify.com/api/sms/quick?key=API_KEY
+// body {recipient: [numbers], sender, message, is_schedule: false, schedule_date: ''}
+// Sender ID: max 11 characters and must be registered/approved in your mNotify dashboard first.
+// Numbers are sent as 233XXXXXXXXX (no "+").
 export const sendSms = (to: string, message: string) =>
   safe(async () => {
-    const key = Deno.env.get('ARKESEL_API_KEY');
-    if (!key) return { ok: false, detail: 'ARKESEL_API_KEY not set' };
-    const res = await fetch('https://sms.arkesel.com/api/v2/sms/send', {
+    const key = Deno.env.get('MNOTIFY_API_KEY');
+    if (!key) return { ok: false, detail: 'MNOTIFY_API_KEY not set' };
+    const res = await fetch(`https://api.mnotify.com/api/sms/quick?key=${encodeURIComponent(key)}`, {
       method: 'POST',
-      headers: { 'api-key': key, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ sender: Deno.env.get('SMS_SENDER_ID') ?? 'EbenobaGH', message, recipients: [to] }),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({
+        recipient: [to.replace(/^\+/, '')], sender: Deno.env.get('SMS_SENDER_ID') ?? 'EbenobaGH',
+        message, is_schedule: false, schedule_date: '',
+      }),
     });
     const j = await res.json().catch(() => ({}));
-    // The docs page does not show the success body; treat HTTP 2xx without an explicit error status as sent.
+    // Treat HTTP 2xx without an explicit error/failed status as sent (check one real SMS end to end).
     const ok = res.ok && !/error|fail/i.test(String(j?.status ?? ''));
     return { ok, detail: ok ? undefined : JSON.stringify(j).slice(0, 300) };
   });
 
-// Resend: POST https://api.resend.com/emails. EMAIL_FROM must use a domain verified in Resend
-// (for quick tests only: "Ebenoba GH <onboarding@resend.dev>").
+// Accepts "Ebenoba GH <orders@example.com>" or just "orders@example.com"
+export const parseSender = (raw: string | undefined) => {
+  const s = (raw ?? '').trim();
+  const m = s.match(/^(.*?)\s*<([^<>]+)>$/);
+  return m ? { name: m[1].replace(/^"|"$/g, '').trim() || 'Ebenoba GH', email: m[2].trim() } : { name: 'Ebenoba GH', email: s };
+};
+
+// Brevo transactional email: POST https://api.brevo.com/v3/smtp/email, header api-key.
+// EMAIL_FROM must be a sender you verified in Brevo (Senders, Domains & Dedicated IPs).
 export const sendEmail = (to: string, subject: string, html: string) =>
   safe(async () => {
-    const key = Deno.env.get('RESEND_API_KEY');
-    if (!key) return { ok: false, detail: 'RESEND_API_KEY not set' };
-    const res = await fetch('https://api.resend.com/emails', {
+    const key = Deno.env.get('BREVO_API_KEY');
+    if (!key) return { ok: false, detail: 'BREVO_API_KEY not set' };
+    const sender = parseSender(Deno.env.get('EMAIL_FROM'));
+    if (!sender.email) return { ok: false, detail: 'EMAIL_FROM not set' };
+    const res = await fetch('https://api.brevo.com/v3/smtp/email', {
       method: 'POST',
-      headers: { Authorization: `Bearer ${key}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({ from: Deno.env.get('EMAIL_FROM') ?? 'Ebenoba GH <onboarding@resend.dev>', to: [to], subject, html }),
+      headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ sender, to: [{ email: to }], subject, htmlContent: html }),
     });
     const j = await res.json().catch(() => ({}));
     return { ok: res.ok, detail: res.ok ? undefined : JSON.stringify(j).slice(0, 300) };

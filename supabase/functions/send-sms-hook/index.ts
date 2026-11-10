@@ -1,5 +1,5 @@
 // Supabase Auth "Send SMS" hook -> POST /functions/v1/send-sms-hook
-// Supabase makes the login code and calls this function to deliver it; we send it with Arkesel.
+// Supabase makes the login code and calls this function to deliver it; we send it with mNotify.
 // Deploy with:  supabase functions deploy send-sms-hook --no-verify-jwt
 // Then: Dashboard -> Authentication -> Hooks -> Send SMS -> HTTPS -> this function's URL -> Generate secret,
 // and save the secret:  supabase secrets set SEND_SMS_HOOK_SECRET="v1,whsec_..."

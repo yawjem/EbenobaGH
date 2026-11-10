@@ -65,14 +65,17 @@ export default function Home() {
         {campaigns.length > 0 && (
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 12, gap: 10 }}>
             {campaigns.map((c) => (
-              <LinearGradient key={c.id} colors={[colors.primary, colors.darkest]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
+              <Pressable key={c.id} onPress={() => router.push(`/campaign/${c.id}`)} accessibilityRole="button" accessibilityLabel={`${c.name} offers`}>
+              <LinearGradient colors={[colors.primary, colors.darkest]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
                 style={{ width: 300, height: 120, borderRadius: radius.lg, overflow: 'hidden', justifyContent: 'center', padding: 16 }}>
                 {c.banner_url ? <Image source={{ uri: c.banner_url }} style={{ position: 'absolute', width: '100%', height: '100%' }} /> : null}
                 <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900' }}>{c.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <Ionicons name="flash" size={16} color={colors.goldSoft} /><Text style={{ color: colors.goldSoft, fontWeight: '700' }}>Limited-time offers</Text>
+                  <Ionicons name="flash" size={16} color={colors.goldSoft} /><Text style={{ color: colors.goldSoft, fontWeight: '700' }}>See all offers</Text>
+                  <Ionicons name="chevron-forward" size={14} color={colors.goldSoft} />
                 </View>
-              </LinearGradient>))}
+              </LinearGradient>
+              </Pressable>))}
           </ScrollView>)}
 
         {/* Category tiles, each with its own tint */}

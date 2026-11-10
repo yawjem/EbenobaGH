@@ -6,7 +6,7 @@ import { signOut, useRequireRole } from '@/lib/auth';
 
 const NAV = [
   ['/admin', 'Overview'], ['/admin/orders', 'Orders'], ['/admin/applications', 'Seller applications'], ['/admin/shops', 'Shops'], ['/admin/products', 'Products'],
-  ['/admin/riders', 'Riders'], ['/admin/promotions', 'Promotions'], ['/admin/returns', 'Returns'],
+  ['/admin/delivery', 'Delivery options'], ['/admin/riders', 'Riders'], ['/admin/promotions', 'Promotions'], ['/admin/returns', 'Returns'],
   ['/admin/complaints', 'Complaints'], ['/admin/earnings', 'Earnings & payouts'], ['/admin/settings', 'Settings'],
 ];
 

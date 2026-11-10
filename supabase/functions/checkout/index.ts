@@ -1,5 +1,5 @@
 // POST /functions/v1/checkout   (signed-in buyer)
-// body: { address_id: uuid, items: [{ variant_id: uuid, qty: number }] }
+// body: { address_id: uuid, method: 'shaq_express', speed: 'three_days', items: [{ variant_id: uuid, qty: number }] }
 // -> { authorization_url, order_id, order_number, reference, total }
 //
 // 1. create_order() re-prices the cart from the database and builds order + packages atomically.
@@ -15,6 +15,8 @@ const FRIENDLY: Record<string, [number, string]> = {
   address_not_found: [400, 'Please choose a delivery address.'],
   variant_not_found: [409, 'An item in your cart is no longer available. Please refresh your cart.'],
   no_delivery_rate: [422, 'Delivery is not available to that region yet.'],
+  delivery_required: [400, 'Please choose a delivery method and delivery time.'],
+  delivery_unavailable: [422, 'That delivery option is not available for this order. Please pick another one.'],
 };
 
 Deno.serve(async (req) => {
@@ -34,6 +36,8 @@ Deno.serve(async (req) => {
   const admin = adminClient();
   const { data: order, error } = await admin.rpc('create_order', {
     p_buyer: user.id, p_address: body.address_id, p_items: items,
+    p_method: typeof body.method === 'string' ? body.method : null,
+    p_speed: typeof body.speed === 'string' ? body.speed : null,
   });
   if (error) {
     const code = String(error.message).split(':')[0].trim();

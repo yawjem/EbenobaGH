@@ -24,7 +24,7 @@ mock.module('npm:@supabase/supabase-js@2', () => ({ createClient: () => fakeClie
 
 const env: Record<string, string> = {
   SUPABASE_URL: 'http://x', SUPABASE_ANON_KEY: 'a', SUPABASE_SERVICE_ROLE_KEY: 's',
-  PAYSTACK_SECRET_KEY: 'sk_test_secret', CRON_SECRET: 'cron-secret-123', ARKESEL_API_KEY: 'ak', RESEND_API_KEY: 'rk',
+  PAYSTACK_SECRET_KEY: 'sk_test_secret', CRON_SECRET: 'cron-secret-123', MNOTIFY_API_KEY: 'mk', BREVO_API_KEY: 'bk', EMAIL_FROM: 'Ebenoba GH <orders@ebenoba.com>',
   SEND_SMS_HOOK_SECRET: 'v1,whsec_' + Buffer.from('hook-secret-bytes-0123456789abcdef').toString('base64'),
 };
 let lastHandler: any;
@@ -223,31 +223,31 @@ describe('send-notifications', () => {
     state.results['notification_outbox:select'] = { data: [job(1, 'package_dispatched', { courier_name: 'Shaq Express', tracking_number: 'SQ1' })], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'arkesel': { status: 200, body: { status: 'success' } }, 'resend': { status: 200, body: { id: 'e1' } } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'mnotify': { status: 200, body: { status: 'success' } }, 'brevo': { status: 200, body: { id: 'e1' } } };
     const j = await (await run(h)).json();
     expect(j.sent).toBe(1);
-    const sms = state.fetches.find((f: any) => f.url.includes('arkesel'));
-    expect(sms.body.recipients).toEqual(['+233244123456']); expect(sms.body.message).toContain('Shaq Express');
-    expect(sms.init.headers['api-key']).toBe('ak');
+    const sms = state.fetches.find((f: any) => f.url.includes('mnotify'));
+    expect(sms.body.recipient).toEqual(['233244123456']); expect(sms.body.message).toContain('Shaq Express');
+    expect(sms.url).toContain('key=mk');
     expect(state.fetches.some((f: any) => f.url.includes('exp.host'))).toBe(true);
-    expect(state.fetches.find((f: any) => f.url.includes('resend')).body.to).toEqual(['ama@x.com']);
+    expect(state.fetches.find((f: any) => f.url.includes('brevo')).body.to).toEqual([{ email: 'ama@x.com' }]);
   });
   test('"payment received" never costs an SMS, and two packages of one order send it once', async () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:select'] = { data: [job(1, 'package_paid'), job(2, 'package_paid')], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'resend': { status: 200, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'brevo': { status: 200, body: {} } };
     await run(h);
-    expect(state.fetches.filter((f: any) => f.url.includes('arkesel')).length).toBe(0);
-    expect(state.fetches.filter((f: any) => f.url.includes('resend')).length).toBe(1);
+    expect(state.fetches.filter((f: any) => f.url.includes('mnotify')).length).toBe(0);
+    expect(state.fetches.filter((f: any) => f.url.includes('brevo')).length).toBe(1);
   });
   test('one channel failing does not cause a duplicate re-send', async () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:select'] = { data: [job(1, 'package_delivered')], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'arkesel': { status: 500, body: { status: 'error' } }, 'resend': { status: 200, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'mnotify': { status: 500, body: { status: 'error' } }, 'brevo': { status: 200, body: {} } };
     const j = await (await run(h)).json();
     expect(j.sent).toBe(1); expect(j.retry).toBe(0);
   });
@@ -255,7 +255,7 @@ describe('send-notifications', () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 500, body: {} }, 'arkesel': { status: 500, body: {} }, 'resend': { status: 500, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 500, body: {} }, 'mnotify': { status: 500, body: {} }, 'brevo': { status: 500, body: {} } };
     state.results['notification_outbox:select'] = { data: [job(1, 'package_delivered')], error: null };
     expect((await (await run(h)).json()).retry).toBe(1);
     state.results['notification_outbox:select'] = { data: [{ ...job(1, 'package_delivered'), attempts: 4 }], error: null };
@@ -284,7 +284,7 @@ describe('promo-notifier', () => {
     const j = await (await run(h)).json();
     (fakeClient as any).rpc = orig;
     expect(j).toMatchObject({ candidates: 2, sent: 1, skipped: 1 });
-    expect(state.fetches[0].body.title).toBe('15% off: Blender'); expect(state.fetches[0].body.body).toContain('GH₵238.00');
+    expect(state.fetches[0].body.title).toBe('15% off Blender'); expect(state.fetches[0].body.body).toContain('GH₵238.00');
     expect(state.calls.some((c: any) => c.table === 'promo_notification_log' && c.op === 'insert')).toBe(true);
   });
 });
@@ -301,15 +301,15 @@ describe('send-sms-hook', () => {
       headers: { 'webhook-id': id, 'webhook-timestamp': ts, 'webhook-signature': `${o.extra ?? ''}v1,${mac}` } });
   };
   const good = { user: { phone: '233244123456' }, sms: { otp: '482913' } };
-  const smsCalls = () => state.fetches.filter((f: any) => f.url.includes('arkesel'));
+  const smsCalls = () => state.fetches.filter((f: any) => f.url.includes('mnotify'));
 
   test('valid hook call texts the code to the normalised Ghana number', async () => {
-    state.fetchMap['arkesel'] = { status: 200, body: { status: 'success' } };
+    state.fetchMap['mnotify'] = { status: 200, body: { status: 'success' } };
     const h = await load('../send-sms-hook/index.ts');
     const res = await h(hookReq(good));
     expect(res.status).toBe(200);
     expect(smsCalls().length).toBe(1);
-    expect(smsCalls()[0].body.recipients).toEqual(['+233244123456']);
+    expect(smsCalls()[0].body.recipient).toEqual(['233244123456']);
     expect(smsCalls()[0].body.message).toContain('482913');
     expect(smsCalls()[0].body.message.length).toBeLessThan(160);
   });
@@ -326,7 +326,7 @@ describe('send-sms-hook', () => {
     expect(smsCalls().length).toBe(0);
   });
   test('accepts the right signature among several', async () => {
-    state.fetchMap['arkesel'] = { status: 200, body: { status: 'success' } };
+    state.fetchMap['mnotify'] = { status: 200, body: { status: 'success' } };
     const h = await load('../send-sms-hook/index.ts');
     expect((await h(hookReq(good, { extra: 'v1,AAAAAAAA ' }))).status).toBe(200);
   });
@@ -338,12 +338,30 @@ describe('send-sms-hook', () => {
     expect(smsCalls().length).toBe(0);
   });
   test('SMS provider failure gives a friendly 502 that does not contain the code, and the code is never logged', async () => {
-    state.fetchMap['arkesel'] = { status: 500, body: { status: 'error', message: 'boom' } };
+    state.fetchMap['mnotify'] = { status: 500, body: { status: 'error', message: 'boom' } };
     const logged: string[] = []; const orig = console.error; console.error = (...a: any[]) => { logged.push(a.join(' ')); };
     const h = await load('../send-sms-hook/index.ts');
     const res = await h(hookReq(good)); console.error = orig;
     expect(res.status).toBe(502);
     const txt = JSON.stringify(await res.json());
     expect(txt).not.toContain('482913'); expect(logged.join(' ')).not.toContain('482913');
+  });
+});
+
+describe('personalised promo + brevo sender', () => {
+  test('promo message uses name, view count and dwell time', async () => {
+    const { promoMessage } = await import('../_shared/templates.ts');
+    const base = { title: 'Red Sneakers', discountPct: 25, price: 'GH₵150.00', was: 'GH₵200.00' };
+    const a = promoMessage({ ...base, firstName: 'Ama', views: 4, seconds: 20 });
+    expect(a.title).toContain('Ama'); expect(a.body).toContain('4 times');
+    const b = promoMessage({ ...base, firstName: 'Ama', views: 1, seconds: 120 });
+    expect(b.title).toContain('still thinking');
+    const c = promoMessage({ ...base, firstName: null, views: 1, seconds: 5 });
+    expect(c.title).toBe('25% off Red Sneakers');
+  });
+  test('sender parsing', async () => {
+    const { parseSender } = await import('../_shared/senders.ts');
+    expect(parseSender('Ebenoba GH <orders@x.com>')).toEqual({ name: 'Ebenoba GH', email: 'orders@x.com' });
+    expect(parseSender('orders@x.com')).toEqual({ name: 'Ebenoba GH', email: 'orders@x.com' });
   });
 });
