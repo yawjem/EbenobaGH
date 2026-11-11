@@ -11,6 +11,7 @@ import { ghs } from '../src/lib/format';
 import { toE164Gh, toLocalGh } from '../src/lib/phone';
 import { Button } from '../src/components/ui';
 import { countryName } from '../src/lib/countries';
+import { column } from '../src/lib/responsive';
 
 type Opt = { method: string; method_label: string; kind: string; speed: string; speed_label: string; fee: number; min_days: number; max_days: number };
 const METHOD_HINT: Record<string, string> = {
@@ -108,7 +109,7 @@ export default function Checkout() {
   const inp = { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 12, marginTop: 8, backgroundColor: '#fff' } as const;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ ...column, padding: 16 }}>
       <Text style={{ fontSize: 17, fontWeight: '800', color: colors.deep }}>Delivery address</Text>
       {addresses.map((a) => (
         <Pressable key={a.id} onPress={() => setAddrId(a.id)} style={{ marginTop: 8, padding: 12, borderRadius: radius.md, borderWidth: 1.5,

@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase';
 import { colors, radius } from '../../src/lib/theme';
 import { dateTime, ghs, STATUS_LABEL, STATUS_TEXT, STATUS_TINT, TIMELINE } from '../../src/lib/format';
 import { useCart } from '../../src/state/cart';
+import { column } from '../../src/lib/responsive';
 
 // Tracking page: one order, one card per package ("Package 1 of 2"), each with its own live status.
 export default function OrderDetail() {
@@ -48,7 +49,7 @@ export default function OrderDetail() {
   if (!order) return null;
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ padding: 16 }}>
+    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={{ ...column, padding: 16 }}>
       <Text style={{ fontSize: 22, fontWeight: '900', color: colors.navy }}>{order.order_number}</Text>
       <Text style={{ color: colors.muted }}>Placed {dateTime(order.created_at)} · Total {ghs(order.total)}</Text>
       {order.status === 'awaiting_payment' && (

@@ -8,6 +8,7 @@ import { colors, radius } from '../../src/lib/theme';
 import { ghs } from '../../src/lib/format';
 import { Button, Empty } from '../../src/components/ui';
 import { SwipeToDelete } from '../../src/components/SwipeToDelete';
+import { column } from '../../src/lib/responsive';
 
 export default function Cart() {
   const { items, subtotal, setQty, remove } = useCart();
@@ -17,7 +18,7 @@ export default function Cart() {
 
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
-      <FlatList data={items} keyExtractor={(i) => i.variantId} contentContainerStyle={{ padding: 12 }}
+      <FlatList data={items} keyExtractor={(i) => i.variantId} contentContainerStyle={{ ...column, padding: 12 }}
         renderItem={({ item }) => (
           <SwipeToDelete onDelete={() => remove(item.variantId)}>
           <View style={{ flexDirection: 'row', gap: 12, padding: 10, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, backgroundColor: colors.bg }}>

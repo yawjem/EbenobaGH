@@ -6,6 +6,7 @@ import { useAuth } from '../../src/state/auth';
 import { colors, radius } from '../../src/lib/theme';
 import { dateTime, ghs, STATUS_LABEL, STATUS_TEXT, STATUS_TINT } from '../../src/lib/format';
 import { Button, Empty } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 export default function Orders() {
   const { session } = useAuth();
@@ -21,7 +22,7 @@ export default function Orders() {
   if (!orders.length) return <Empty text="No orders yet." />;
 
   return (
-    <FlatList data={orders} keyExtractor={(o) => o.id} contentContainerStyle={{ padding: 12 }} style={{ backgroundColor: colors.bg }}
+    <FlatList data={orders} keyExtractor={(o) => o.id} contentContainerStyle={{ ...column, padding: 12 }} style={{ backgroundColor: colors.bg }}
       renderItem={({ item: o }) => {
         const pkgs = o.packages ?? [];
         const st = o.status !== 'paid' ? o.status : (pkgs.every((p: any) => p.status === 'delivered') ? 'delivered' : pkgs[0]?.status ?? 'paid');

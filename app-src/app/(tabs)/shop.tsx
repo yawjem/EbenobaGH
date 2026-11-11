@@ -9,6 +9,7 @@ import { colors, radius } from '../../src/lib/theme';
 import { ghs } from '../../src/lib/format';
 import { BarChart, Delta, ProgressBar } from '../../src/components/charts';
 import { Button, Empty, Section } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 const RANGES = [7, 30, 90];
 const shortDay = (iso: string) => { const [, m, d] = iso.split('-'); return `${Number(d)}/${Number(m)}`; };
@@ -46,7 +47,7 @@ export default function MyShop() {
     </Pressable>);
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.primary}
+    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={column} refreshControl={<RefreshControl refreshing={refreshing} tintColor={colors.primary}
       onRefresh={async () => { setRefreshing(true); await reload(); await load(); setRefreshing(false); }} />}>
       <LinearGradient colors={[colors.navy, '#2B4160']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 20, paddingTop: 44 }}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>

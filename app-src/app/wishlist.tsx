@@ -5,8 +5,10 @@ import { supabase } from '../src/lib/supabase';
 import { ProductCard } from '../src/components/ProductCard';
 import { Empty } from '../src/components/ui';
 import { colors } from '../src/lib/theme';
+import { useResponsive } from '../src/lib/responsive';
 
 export default function Wishlist() {
+  const { cols } = useResponsive();
   const [items, setItems] = useState<any[]>([]);
   useFocusEffect(useCallback(() => {
     (async () => {
@@ -17,6 +19,6 @@ export default function Wishlist() {
       setItems(data ?? []);
     })();
   }, []));
-  return <FlatList style={{ backgroundColor: colors.bg }} data={items} numColumns={2} keyExtractor={(p) => p.id} contentContainerStyle={{ padding: 8 }}
+  return <FlatList key={`c${cols}`} style={{ backgroundColor: colors.bg }} data={items} numColumns={cols} keyExtractor={(p) => p.id} contentContainerStyle={{ padding: 8 }}
     renderItem={({ item }) => <ProductCard p={item} />} ListEmptyComponent={<Empty text="Tap the heart on a product to save it here." />} />;
 }

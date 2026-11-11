@@ -7,6 +7,7 @@ import { useMyShop } from '../../src/lib/seller';
 import { colors, radius } from '../../src/lib/theme';
 import { ghs } from '../../src/lib/format';
 import { Button, Empty } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 export default function SellerProducts() {
   const { shop } = useMyShop();
@@ -25,7 +26,7 @@ export default function SellerProducts() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       {loading ? <ActivityIndicator style={{ marginTop: 40 }} color={colors.primary} /> : (
-        <FlatList data={rows} keyExtractor={(p) => p.id} contentContainerStyle={{ padding: 12, paddingBottom: 90 }}
+        <FlatList data={rows} keyExtractor={(p) => p.id} contentContainerStyle={{ ...column, padding: 12, paddingBottom: 90 }}
           ListEmptyComponent={<Empty text="No products yet. Tap “Add product” to list your first item." />}
           renderItem={({ item: p }) => {
             const media = [...(p.product_media ?? [])].sort((a: any, b: any) => Number(b.is_primary) - Number(a.is_primary) || a.position - b.position)[0];

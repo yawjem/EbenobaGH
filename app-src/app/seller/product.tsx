@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase';
 import { pickImage, uploadImage, useMyShop } from '../../src/lib/seller';
 import { colors, radius } from '../../src/lib/theme';
 import { Button } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 type Img = { id?: string; url: string; local?: string };
 const MAX_VIEWS = 4;
@@ -147,7 +148,7 @@ export default function ProductEditor() {
   return (
     <>
       <Stack.Screen options={{ title: id ? 'Edit product' : 'Add product' }} />
-      <ScrollView contentContainerStyle={{ padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
+      <ScrollView contentContainerStyle={{ ...column, padding: 16, paddingBottom: 40 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
         <Text style={lab}>Pictures</Text>
         <Text style={{ color: colors.muted, fontSize: 12, marginTop: 2 }}>Buyers trust products with clear photos. The first two are required to publish.</Text>
         <View style={{ flexDirection: 'row', gap: 12, marginTop: 10 }}>

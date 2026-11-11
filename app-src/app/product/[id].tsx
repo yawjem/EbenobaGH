@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Alert, Dimensions, FlatList, Image, Pressable, ScrollView, Share, Text, View } from 'react-native';
+import { Alert, FlatList, Image, Pressable, ScrollView, Share, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../src/lib/supabase';
@@ -10,8 +10,8 @@ import { ProductCard } from '../../src/components/ProductCard';
 import { useCart } from '../../src/state/cart';
 import { useAuth } from '../../src/state/auth';
 import { track } from '../../src/lib/tracking';
+import { useResponsive } from '../../src/lib/responsive';
 
-const W = Dimensions.get('window').width;
 const SLOT_LABEL: Record<string, string> = { in_use: 'Out of the box / in use', box: 'In the box' };
 
 export default function ProductPage() {
@@ -24,6 +24,7 @@ export default function ProductPage() {
   const [sel, setSel] = useState<string | null>(null);
   const [related, setRelated] = useState<any[]>([]);
   const [wished, setWished] = useState(false);
+  const { gallery: W } = useResponsive();
   const [page, setPage] = useState(0);
   const openedAt = useRef(Date.now());
 
@@ -80,7 +81,7 @@ export default function ProductPage() {
   return (
     <View style={{ flex: 1, backgroundColor: colors.bg }}>
       <ScrollView>
-        <View>
+        <View style={{ width: W, alignSelf: 'center' }}>
           <FlatList horizontal pagingEnabled showsHorizontalScrollIndicator={false} data={gallery}
             keyExtractor={(m) => m.id} onMomentumScrollEnd={(e) => setPage(Math.round(e.nativeEvent.contentOffset.x / W))}
             renderItem={({ item }) => <Image source={{ uri: item.url }} style={{ width: W, height: W, backgroundColor: colors.surface }} resizeMode="contain" />} />

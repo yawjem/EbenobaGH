@@ -6,6 +6,7 @@ import { colors, radius } from '../../src/lib/theme';
 import { ProductCard, FeedProduct } from '../../src/components/ProductCard';
 import { Empty } from '../../src/components/ui';
 import { track } from '../../src/lib/tracking';
+import { useResponsive } from '../../src/lib/responsive';
 
 const COLS = 'id,title,price,display_price,image_url,in_stock,rating_avg,rating_count,category_id';
 const SORTS = [
@@ -13,6 +14,7 @@ const SORTS = [
 ];
 
 export default function Explore() {
+  const { cols } = useResponsive();
   const params = useLocalSearchParams<{ q?: string; cat?: string }>();
   const [q, setQ] = useState(params.q ?? '');
   const [cats, setCats] = useState<any[]>([]);
@@ -69,7 +71,7 @@ export default function Explore() {
             ? chip(item.label, sort === item.key, () => setSort(item.key), item.key)
             : chip(item.label, inStock, () => setInStock((v) => !v), item.key)} />
       </View>
-      <FlatList data={items} numColumns={2} keyExtractor={(p) => p.id} contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 24 }}
+      <FlatList key={`c${cols}`} data={items} numColumns={cols} keyExtractor={(p) => p.id} contentContainerStyle={{ paddingHorizontal: 8, paddingBottom: 24 }}
         renderItem={({ item }) => <ProductCard p={item} />} refreshing={loading} onRefresh={() => setQ((v) => v + '')}
         ListEmptyComponent={loading ? null : <Empty text="No products found. Try another word or category." />} />
     </View>

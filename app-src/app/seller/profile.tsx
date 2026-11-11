@@ -6,6 +6,7 @@ import { supabase } from '../../src/lib/supabase';
 import { pickImage, REGIONS, uploadImage, useMyShop } from '../../src/lib/seller';
 import { colors, radius } from '../../src/lib/theme';
 import { Button } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 const NETWORKS = ['MTN', 'Telecel', 'AT'];
 
@@ -54,7 +55,7 @@ export default function ShopProfile() {
   const head = (t: string, c: string) => <Text style={{ fontSize: 16, fontWeight: '800', color: c, marginTop: 26 }}>{t}</Text>;
 
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
+    <ScrollView contentContainerStyle={{ ...column, padding: 16 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
       <View style={{ alignItems: 'center' }}>
         <Pressable onPress={changeLogo}>
           {f.logo_url ? <Image source={{ uri: f.logo_url }} style={{ width: 96, height: 96, borderRadius: 48, backgroundColor: colors.surface }} />

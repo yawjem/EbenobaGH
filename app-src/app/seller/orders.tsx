@@ -6,6 +6,7 @@ import { useMyShop } from '../../src/lib/seller';
 import { colors, radius } from '../../src/lib/theme';
 import { dateTime, ghs, STATUS_LABEL, STATUS_TEXT, STATUS_TINT } from '../../src/lib/format';
 import { Button, Empty } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 const TABS: [string, string[]][] = [
   ['To pack', ['paid', 'processing']],
@@ -90,7 +91,7 @@ export default function SellerOrders() {
       </View>
 
       {loading ? <ActivityIndicator style={{ marginTop: 30 }} color={colors.primary} /> : tab === 4 && !term ? (
-        <FlatList data={returns} keyExtractor={(r) => r.id} contentContainerStyle={{ padding: 12 }} ListEmptyComponent={<Empty text="No return requests." />}
+        <FlatList data={returns} keyExtractor={(r) => r.id} contentContainerStyle={{ ...column, padding: 12 }} ListEmptyComponent={<Empty text="No return requests." />}
           renderItem={({ item: r }) => (
             <View style={{ padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginBottom: 10 }}>
               <Text style={{ fontWeight: '800' }}>{r.packages?.order_number} · {r.order_items?.title ?? 'Item'} × {r.order_items?.quantity ?? 1}</Text>
@@ -104,7 +105,7 @@ export default function SellerOrders() {
                 </View>)}
             </View>)} />
       ) : (
-        <FlatList data={shown} keyExtractor={(p) => p.id} contentContainerStyle={{ padding: 12 }} ListEmptyComponent={<Empty text={term ? 'No order with that number.' : 'Nothing here right now.'} />}
+        <FlatList data={shown} keyExtractor={(p) => p.id} contentContainerStyle={{ ...column, padding: 12 }} ListEmptyComponent={<Empty text={term ? 'No order with that number.' : 'Nothing here right now.'} />}
           renderItem={({ item: p }) => (
             <View style={{ padding: 12, borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, marginBottom: 10 }}>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>

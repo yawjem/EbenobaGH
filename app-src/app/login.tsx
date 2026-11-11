@@ -7,6 +7,7 @@ import { toE164Gh } from '../src/lib/phone';
 import { colors, radius } from '../src/lib/theme';
 import { Button } from '../src/components/ui';
 import { signInWithGoogle } from '../src/lib/oauth';
+import { column } from '../src/lib/responsive';
 
 // Two ways in: a code texted to your phone (no password to remember), or email + password.
 // Nobody has to sign in to look around: "Continue browsing" closes this screen and the whole shop stays open.
@@ -36,7 +37,7 @@ export default function Login() {
 
   return (
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined} style={{ flex: 1, backgroundColor: colors.bg }}>
-      <ScrollView contentContainerStyle={{ padding: 24, paddingTop: 16 }} keyboardShouldPersistTaps="handled">
+      <ScrollView contentContainerStyle={{ ...column, maxWidth: 460, padding: 24, paddingTop: 16 }} keyboardShouldPersistTaps="handled">
         <Image source={require('../assets/splash.png')} style={{ width: 150, height: 150, alignSelf: 'center' }} resizeMode="contain" />
         <Text style={{ fontSize: 22, fontWeight: '800', color: colors.navy, textAlign: 'center' }}>Welcome to Ebenoba GH</Text>
         <Text style={{ color: colors.muted, textAlign: 'center', marginTop: 4, marginBottom: 18 }}>Sign in to order and track your deliveries.</Text>

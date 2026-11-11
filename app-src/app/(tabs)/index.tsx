@@ -10,6 +10,7 @@ import { categoryIcon } from '../../src/lib/categoryIcon';
 import { ProductCard, FeedProduct } from '../../src/components/ProductCard';
 import { Section } from '../../src/components/ui';
 import { useAuth } from '../../src/state/auth';
+import { useResponsive } from '../../src/lib/responsive';
 
 const COLS = 'id,title,price,display_price,image_url,in_stock,rating_avg,rating_count';
 
@@ -44,9 +45,10 @@ export default function Home() {
 
   useFocusEffect(useCallback(() => { load(); }, [session?.user.id]));
 
+  const { card, banner } = useResponsive();
   const row = (data: FeedProduct[]) => (
     <FlatList horizontal data={data} keyExtractor={(p) => p.id} showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ paddingHorizontal: 8 }} renderItem={({ item }) => <ProductCard p={item} width={150} />} />
+      contentContainerStyle={{ paddingHorizontal: 8 }} renderItem={({ item }) => <ProductCard p={item} width={card} />} />
   );
 
   return (
@@ -67,7 +69,7 @@ export default function Home() {
             {campaigns.map((c) => (
               <Pressable key={c.id} onPress={() => router.push(`/campaign/${c.id}`)} accessibilityRole="button" accessibilityLabel={`${c.name} offers`}>
               <LinearGradient colors={[colors.primary, colors.darkest]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }}
-                style={{ width: 300, height: 120, borderRadius: radius.lg, overflow: 'hidden', justifyContent: 'center', padding: 16 }}>
+                style={{ width: banner, height: 120, borderRadius: radius.lg, overflow: 'hidden', justifyContent: 'center', padding: 16 }}>
                 {c.banner_url ? <Image source={{ uri: c.banner_url }} style={{ position: 'absolute', width: '100%', height: '100%' }} /> : null}
                 <Text style={{ color: '#fff', fontSize: 24, fontWeight: '900' }}>{c.name}</Text>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>

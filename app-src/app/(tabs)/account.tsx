@@ -9,6 +9,7 @@ import { colors, radius } from '../../src/lib/theme';
 import { Button } from '../../src/components/ui';
 import { getConsent, setConsent } from '../../src/lib/tracking';
 import { toLocalGh } from '../../src/lib/phone';
+import { column } from '../../src/lib/responsive';
 
 export default function Account() {
   const { session, profile, refreshProfile } = useAuth();
@@ -26,7 +27,7 @@ export default function Account() {
     <Pressable onPress={onPress} style={{ padding: 16, borderBottomWidth: 1, borderColor: colors.border }}><Text style={{ fontWeight: '600' }}>{label}</Text></Pressable>);
 
   return (
-    <ScrollView style={{ backgroundColor: colors.bg }}>
+    <ScrollView style={{ backgroundColor: colors.bg }} contentContainerStyle={column}>
       <LinearGradient colors={[colors.primary, colors.darkest]} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={{ padding: 24, paddingTop: 36 }}>
         <View style={{ width: 54, height: 54, borderRadius: 27, backgroundColor: 'rgba(255,255,255,0.2)', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
           <Text style={{ color: '#fff', fontSize: 22, fontWeight: '900' }}>{(profile?.full_name || profile?.email || profile?.phone || '?').charAt(0).toUpperCase()}</Text></View>

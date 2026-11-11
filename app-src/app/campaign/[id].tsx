@@ -7,8 +7,10 @@ import { supabase } from '../../src/lib/supabase';
 import { colors, radius } from '../../src/lib/theme';
 import { ProductCard, FeedProduct } from '../../src/components/ProductCard';
 import { Empty } from '../../src/components/ui';
+import { useResponsive } from '../../src/lib/responsive';
 
 export default function Campaign() {
+  const { cols } = useResponsive();
   const { id } = useLocalSearchParams<{ id: string }>();
   const [name, setName] = useState('Offers');
   const [items, setItems] = useState<FeedProduct[] | null>(null);
@@ -30,7 +32,7 @@ export default function Campaign() {
       {items === null ? <ActivityIndicator color={colors.primary} style={{ marginTop: 40 }} />
         : !items.length ? <Empty text="This offer has ended or has no products right now." />
         : (
-          <FlatList data={items} keyExtractor={(p) => p.id} numColumns={2}
+          <FlatList key={`c${cols}`} data={items} keyExtractor={(p) => p.id} numColumns={cols}
             columnWrapperStyle={{ gap: 8, paddingHorizontal: 12 }} contentContainerStyle={{ paddingBottom: 24 }}
             ListHeaderComponent={
               <View style={{ margin: 12, padding: 12, backgroundColor: colors.blush, borderRadius: radius.md, flexDirection: 'row', alignItems: 'center', gap: 8 }}>

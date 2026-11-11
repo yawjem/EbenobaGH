@@ -6,6 +6,7 @@ import { useAuth } from '../../src/state/auth';
 import { friendlyError, REGIONS } from '../../src/lib/seller';
 import { colors, radius } from '../../src/lib/theme';
 import { Button } from '../../src/components/ui';
+import { column } from '../../src/lib/responsive';
 
 export default function Apply() {
   const { session, profile, refreshProfile } = useAuth();
@@ -52,7 +53,7 @@ export default function Apply() {
 
   const inp = { borderWidth: 1, borderColor: colors.border, borderRadius: radius.md, padding: 12, marginTop: 8, backgroundColor: '#fff' } as const;
   return (
-    <ScrollView contentContainerStyle={{ padding: 16 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
+    <ScrollView contentContainerStyle={{ ...column, padding: 16 }} keyboardShouldPersistTaps="handled" style={{ backgroundColor: colors.bg }}>
       <Text style={{ fontSize: 20, fontWeight: '800', color: colors.navy }}>Sell on Ebenoba GH</Text>
       <Text style={{ color: colors.muted, marginTop: 4 }}>Tell us about your business. Ebenoba GH reviews every application before the shop goes live.</Text>
       {app?.status === 'rejected' && (
