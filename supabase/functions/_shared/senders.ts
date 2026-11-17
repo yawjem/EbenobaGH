@@ -18,25 +18,23 @@ export const sendPush = (token: string, title: string, body: string, data: Recor
     return { ok, detail: ok ? undefined : JSON.stringify(j).slice(0, 300) };
   });
 
-// mNotify quick SMS: POST https://api.mnotify.com/api/sms/quick?key=API_KEY
-// body {recipient: [numbers], sender, message, is_schedule: false, schedule_date: ''}
-// Sender ID: max 11 characters and must be registered/approved in your mNotify dashboard first.
-// Numbers are sent as 233XXXXXXXXX (no "+").
+// Brevo transactional SMS: POST https://api.brevo.com/v3/transactionalSMS/send (same BREVO_API_KEY as email).
+// Success is HTTP 201 with {messageId}. Sender: max 11 letters/numbers, and it must be registered for Ghana
+// in Brevo (Settings > Campaigns > SMS Sender ID) before messages are delivered. Recipient = 233XXXXXXXXX (no "+").
 export const sendSms = (to: string, message: string) =>
   safe(async () => {
-    const key = Deno.env.get('MNOTIFY_API_KEY');
-    if (!key) return { ok: false, detail: 'MNOTIFY_API_KEY not set' };
-    const res = await fetch(`https://api.mnotify.com/api/sms/quick?key=${encodeURIComponent(key)}`, {
+    const key = Deno.env.get('BREVO_API_KEY');
+    if (!key) return { ok: false, detail: 'BREVO_API_KEY not set' };
+    const res = await fetch('https://api.brevo.com/v3/transactionalSMS/send', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      headers: { 'api-key': key, 'Content-Type': 'application/json', accept: 'application/json' },
       body: JSON.stringify({
-        recipient: [to.replace(/^\+/, '')], sender: Deno.env.get('SMS_SENDER_ID') ?? 'EbenobaGH',
-        message, is_schedule: false, schedule_date: '',
+        sender: Deno.env.get('SMS_SENDER_ID') ?? 'EbenobaGH',
+        recipient: to.replace(/^\+/, ''), content: message, type: 'transactional',
       }),
     });
     const j = await res.json().catch(() => ({}));
-    // Treat HTTP 2xx without an explicit error/failed status as sent (check one real SMS end to end).
-    const ok = res.ok && !/error|fail/i.test(String(j?.status ?? ''));
+    const ok = res.ok && !!j?.messageId;
     return { ok, detail: ok ? undefined : JSON.stringify(j).slice(0, 300) };
   });
 

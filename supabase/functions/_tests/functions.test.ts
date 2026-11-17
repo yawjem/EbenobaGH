@@ -24,7 +24,7 @@ mock.module('npm:@supabase/supabase-js@2', () => ({ createClient: () => fakeClie
 
 const env: Record<string, string> = {
   SUPABASE_URL: 'http://x', SUPABASE_ANON_KEY: 'a', SUPABASE_SERVICE_ROLE_KEY: 's',
-  PAYSTACK_SECRET_KEY: 'sk_test_secret', CRON_SECRET: 'cron-secret-123', MNOTIFY_API_KEY: 'mk', BREVO_API_KEY: 'bk', EMAIL_FROM: 'Ebenoba GH <orders@ebenoba.com>',
+  PAYSTACK_SECRET_KEY: 'sk_test_secret', CRON_SECRET: 'cron-secret-123', BREVO_API_KEY: 'bk', EMAIL_FROM: 'Ebenoba GH <orders@ebenoba.com>',
   SEND_SMS_HOOK_SECRET: 'v1,whsec_' + Buffer.from('hook-secret-bytes-0123456789abcdef').toString('base64'),
 };
 let lastHandler: any;
@@ -223,31 +223,30 @@ describe('send-notifications', () => {
     state.results['notification_outbox:select'] = { data: [job(1, 'package_dispatched', { courier_name: 'Shaq Express', tracking_number: 'SQ1' })], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'mnotify': { status: 200, body: { status: 'success' } }, 'brevo': { status: 200, body: { id: 'e1' } } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'transactionalSMS': { status: 201, body: { messageId: 'm1' } }, 'smtp/email': { status: 200, body: { id: 'e1' } } };
     const j = await (await run(h)).json();
     expect(j.sent).toBe(1);
-    const sms = state.fetches.find((f: any) => f.url.includes('mnotify'));
-    expect(sms.body.recipient).toEqual(['233244123456']); expect(sms.body.message).toContain('Shaq Express');
-    expect(sms.url).toContain('key=mk');
+    const sms = state.fetches.find((f: any) => f.url.includes('transactionalSMS'));
+    expect(sms.body.recipient).toBe('233244123456'); expect(sms.body.content).toContain('Shaq Express');
     expect(state.fetches.some((f: any) => f.url.includes('exp.host'))).toBe(true);
-    expect(state.fetches.find((f: any) => f.url.includes('brevo')).body.to).toEqual([{ email: 'ama@x.com' }]);
+    expect(state.fetches.find((f: any) => f.url.includes('smtp/email')).body.to).toEqual([{ email: 'ama@x.com' }]);
   });
   test('"payment received" never costs an SMS, and two packages of one order send it once', async () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:select'] = { data: [job(1, 'package_paid'), job(2, 'package_paid')], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'brevo': { status: 200, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'smtp/email': { status: 200, body: {} } };
     await run(h);
-    expect(state.fetches.filter((f: any) => f.url.includes('mnotify')).length).toBe(0);
-    expect(state.fetches.filter((f: any) => f.url.includes('brevo')).length).toBe(1);
+    expect(state.fetches.filter((f: any) => f.url.includes('transactionalSMS')).length).toBe(0);
+    expect(state.fetches.filter((f: any) => f.url.includes('smtp/email')).length).toBe(1);
   });
   test('one channel failing does not cause a duplicate re-send', async () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:select'] = { data: [job(1, 'package_delivered')], error: null };
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'mnotify': { status: 500, body: { status: 'error' } }, 'brevo': { status: 200, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 200, body: { data: { status: 'ok' } } }, 'transactionalSMS': { status: 500, body: { message: 'error' } }, 'smtp/email': { status: 200, body: {} } };
     const j = await (await run(h)).json();
     expect(j.sent).toBe(1); expect(j.retry).toBe(0);
   });
@@ -255,7 +254,7 @@ describe('send-notifications', () => {
     const h = await load('../send-notifications/index.ts');
     state.results['notification_outbox:update'] = { data: [{ id: 1 }], error: null };
     state.results['profiles:select'] = { data: profile };
-    state.fetchMap = { 'exp.host': { status: 500, body: {} }, 'mnotify': { status: 500, body: {} }, 'brevo': { status: 500, body: {} } };
+    state.fetchMap = { 'exp.host': { status: 500, body: {} }, 'transactionalSMS': { status: 500, body: {} }, 'smtp/email': { status: 500, body: {} } };
     state.results['notification_outbox:select'] = { data: [job(1, 'package_delivered')], error: null };
     expect((await (await run(h)).json()).retry).toBe(1);
     state.results['notification_outbox:select'] = { data: [{ ...job(1, 'package_delivered'), attempts: 4 }], error: null };
@@ -301,17 +300,17 @@ describe('send-sms-hook', () => {
       headers: { 'webhook-id': id, 'webhook-timestamp': ts, 'webhook-signature': `${o.extra ?? ''}v1,${mac}` } });
   };
   const good = { user: { phone: '233244123456' }, sms: { otp: '482913' } };
-  const smsCalls = () => state.fetches.filter((f: any) => f.url.includes('mnotify'));
+  const smsCalls = () => state.fetches.filter((f: any) => f.url.includes('transactionalSMS'));
 
   test('valid hook call texts the code to the normalised Ghana number', async () => {
-    state.fetchMap['mnotify'] = { status: 200, body: { status: 'success' } };
+    state.fetchMap['transactionalSMS'] = { status: 201, body: { messageId: 'm1' } };
     const h = await load('../send-sms-hook/index.ts');
     const res = await h(hookReq(good));
     expect(res.status).toBe(200);
     expect(smsCalls().length).toBe(1);
-    expect(smsCalls()[0].body.recipient).toEqual(['233244123456']);
-    expect(smsCalls()[0].body.message).toContain('482913');
-    expect(smsCalls()[0].body.message.length).toBeLessThan(160);
+    expect(smsCalls()[0].body.recipient).toBe('233244123456');
+    expect(smsCalls()[0].body.content).toContain('482913');
+    expect(smsCalls()[0].body.content.length).toBeLessThan(160);
   });
   test('rejects wrong signature, tampered body, stale timestamp and missing headers without sending', async () => {
     const h = await load('../send-sms-hook/index.ts');
@@ -326,7 +325,7 @@ describe('send-sms-hook', () => {
     expect(smsCalls().length).toBe(0);
   });
   test('accepts the right signature among several', async () => {
-    state.fetchMap['mnotify'] = { status: 200, body: { status: 'success' } };
+    state.fetchMap['transactionalSMS'] = { status: 201, body: { messageId: 'm1' } };
     const h = await load('../send-sms-hook/index.ts');
     expect((await h(hookReq(good, { extra: 'v1,AAAAAAAA ' }))).status).toBe(200);
   });
@@ -338,7 +337,7 @@ describe('send-sms-hook', () => {
     expect(smsCalls().length).toBe(0);
   });
   test('SMS provider failure gives a friendly 502 that does not contain the code, and the code is never logged', async () => {
-    state.fetchMap['mnotify'] = { status: 500, body: { status: 'error', message: 'boom' } };
+    state.fetchMap['transactionalSMS'] = { status: 500, body: { status: 'error', message: 'boom' } };
     const logged: string[] = []; const orig = console.error; console.error = (...a: any[]) => { logged.push(a.join(' ')); };
     const h = await load('../send-sms-hook/index.ts');
     const res = await h(hookReq(good)); console.error = orig;

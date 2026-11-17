@@ -37,7 +37,7 @@ Install the Supabase CLI, then `supabase login` and `supabase link --project-ref
 **Secrets** (never put these in the app or in `NEXT_PUBLIC_` variables):
 ```
 supabase secrets set PAYSTACK_SECRET_KEY=sk_test_xxx CRON_SECRET=<long random string> \
-  MNOTIFY_API_KEY=xxx SMS_SENDER_ID=EbenobaGH BREVO_API_KEY=xkeysib-xxx EMAIL_FROM="Ebenoba GH <orders@yourdomain.com>"
+  SMS_SENDER_ID=EbenobaGH BREVO_API_KEY=xkeysib-xxx EMAIL_FROM="Ebenoba GH <orders@yourdomain.com>"
 ```
 **Deploy:**
 ```
@@ -62,7 +62,7 @@ select cron.schedule('promo-notifier','0 */4 * * *', $$ select net.http_post(
 Plus the 3 SQL jobs from file 001 (interest refresh, earnings release, expire unpaid orders).
 
 **Push notifications:** in the app folder run `npx eas-cli init` once (creates the Expo project ID the push registration needs).
-**SMS:** register your sender ID in your mNotify dashboard before launch, otherwise messages may be rejected or rewritten. Check one real SMS end to end.
+**SMS:** register the sender ID for Ghana in Brevo (Settings > Campaigns > SMS Sender ID) before launch, otherwise messages may be rejected or rewritten. Check one real SMS end to end.
 
 ## Seller portal ("My Shop" tab)
 1. A buyer opens **Account → Sell on Ebenoba GH** and sends an application (shop name, description, phone, region, city).
@@ -77,12 +77,12 @@ After updating an existing app project run `npx expo install expo-image-picker` 
 
 ## Phone login (SMS code) and guest browsing
 The login screen offers **Phone number** (a 6-digit code texted to the person, no password) and **Email + password**. A "Continue browsing" button closes it: anyone can open the app and browse, search and fill a cart with no account. An account is asked for only at checkout, orders, wishlist and selling.
-Supabase sends the code through our `send-sms-hook` function, which texts it with mNotify (Ghana numbers only). One-time setup:
+Supabase sends the code through our `send-sms-hook` function, which texts it with Brevo SMS (Ghana numbers only). One-time setup:
 1. Run `007_phone_login.sql` and deploy `send-sms-hook` (command above).
 2. Supabase dashboard → Authentication → Sign In / Providers → **Phone**: turn it on. We do not use Twilio; the hook below does the sending. (If the page insists on choosing a provider, pick any: the hook replaces it.)
 3. Authentication → **Hooks** → Send SMS → type HTTPS → URL `https://<ref>.supabase.co/functions/v1/send-sms-hook` → generate the secret, then run `supabase secrets set SEND_SMS_HOOK_SECRET="v1,whsec_..."` (paste exactly what the dashboard shows).
 4. Authentication → Rate limits: raise "SMS sent per hour" (the default is low and a busy launch day can hit it). Set the code expiry to about 5 minutes (networks can be slow).
-5. Your mNotify sender ID `EbenobaGH` must be approved. Test with your own number before the client sees it.
+5. Your Brevo sender ID `EbenobaGH` must be approved for Ghana. Test with your own number before the client sees it.
 A person who signs up by phone and another by email are separate accounts, even with the same number (we can add account linking later). Phone sign-ups have no email, so they get SMS and push updates only.
 
 ## Brevo (email codes + order emails)
@@ -120,4 +120,4 @@ Crimson = brand, buttons, sale. Navy = structure and "we're preparing it". Teal 
 | Admin: overview, orders, shops + owners, products, riders, promotions, returns, complaints, earnings, settings | Live rider tracking, cars, account linking (phone + email), web storefront link |
 | Server: atomic order creation, Paystack webhook, SMS/email/push on status change, capped promo pushes | Automatic Paystack split payouts and refunds (currently recorded manually by admin) |
 
-**Not yet verified by me:** a real `npm install` / `expo start` / `next build` (my workspace could not reach the npm registry), the Edge Functions on a live Deno runtime, and mNotify's exact response format. Run the app and one test order on your machine before showing the client.
+**Not yet verified by me:** a real `npm install` / `expo start` / `next build` (my workspace could not reach the npm registry), the Edge Functions on a live Deno runtime, and Brevo SMS delivery to Ghana. Run the app and one test order on your machine before showing the client.
